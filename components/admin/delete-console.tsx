@@ -239,7 +239,13 @@ export function DeleteConsole({ authenticatedEmail, deleteRouteReady }: DeleteCo
     }
 
     setAssetLoadState("loading");
-    setAssetFeedback(cursor ? "正在加载更多 Cloudinary 资源..." : "正在读取 Cloudinary 资源列表...");
+    setAssetFeedback(
+      cursor
+        ? "正在加载更多 Cloudinary 资源..."
+        : assetQuery.trim()
+          ? "正在执行 Cloudinary 服务端搜索..."
+          : "正在读取 Cloudinary 资源列表..."
+    );
 
     try {
       const query = new URLSearchParams({
@@ -278,8 +284,12 @@ export function DeleteConsole({ authenticatedEmail, deleteRouteReady }: DeleteCo
       setAssetLoadState("ready");
       setAssetFeedback(
         result.data.assets.length > 0
-          ? `已读取 ${cursor ? "更多" : ""} Cloudinary 资源。`
-          : "当前目录下没有可显示的 Cloudinary 资源。"
+          ? assetQuery.trim()
+            ? "Cloudinary 服务端搜索已完成。"
+            : `已读取 ${cursor ? "更多" : ""} Cloudinary 资源。`
+          : assetQuery.trim()
+            ? "当前搜索条件下没有匹配的 Cloudinary 资源。"
+            : "当前目录下没有可显示的 Cloudinary 资源。"
       );
     } catch (error) {
       setAssetLoadState("error");
@@ -436,7 +446,7 @@ export function DeleteConsole({ authenticatedEmail, deleteRouteReady }: DeleteCo
       <div className="stack-sm">
         <div className="card-subtitle-row">
           <strong>Cloudinary 真实资源列表</strong>
-          <span className="help-text">通过服务端 Admin API 获取当前上传目录下的资源。</span>
+          <span className="help-text">通过服务端 Admin API 获取资源；输入关键词时改为服务端搜索整个上传目录。</span>
         </div>
 
         <div className="form-grid">

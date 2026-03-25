@@ -1,6 +1,7 @@
 import { appendDeleteAuditEntry } from "@/lib/delete-audit";
 import { deleteCloudinaryAsset } from "@/lib/cloudinary";
 import { getPublicUploadConfig, getServerCloudinaryConfig } from "@/lib/env";
+import { isPublicIdWithinUploadFolder } from "@/lib/upload-policy";
 import type {
   DeleteAuditEntry,
   DeleteImageRequest,
@@ -60,8 +61,8 @@ export async function deleteManagedAsset(input: {
     };
   }
 
-  if (uploadFolder && !payload.publicId.startsWith(uploadFolder)) {
-    const message = `只允许删除 ${uploadFolder} 前缀下的资源。`;
+  if (!isPublicIdWithinUploadFolder(payload.publicId, uploadFolder)) {
+    const message = `只允许删除 ${uploadFolder} 目录内的资源。`;
 
     await logDeleteAudit({
       actorEmail: input.actorEmail,

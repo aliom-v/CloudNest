@@ -1,3 +1,5 @@
+import { isPublicSignedUploadEnabled as isPublicSignedUploadEnabledByPolicy, normalizeUploadFolder } from "@/lib/upload-policy";
+
 type EnvFlag = {
   key: string;
   required: boolean;
@@ -10,11 +12,13 @@ export function getSiteName(): string {
 }
 
 export function getPublicUploadConfig() {
+  const uploadFolder = normalizeUploadFolder(process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_FOLDER || "cloudnest/uploads");
+
   return {
     siteName: getSiteName(),
     cloudName: process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || "",
     uploadPreset: process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET || "",
-    uploadFolder: process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_FOLDER || "cloudnest/uploads",
+    uploadFolder: uploadFolder || "cloudnest/uploads",
     defaultTags: process.env.NEXT_PUBLIC_DEFAULT_UPLOAD_TAGS || "imagebed,mvp,web-upload"
   };
 }
@@ -34,7 +38,8 @@ export function getPublicEnvFlags(): EnvFlag[] {
     toFlag("NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME", config.cloudName, true),
     toFlag("NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET", config.uploadPreset, true),
     toFlag("NEXT_PUBLIC_CLOUDINARY_UPLOAD_FOLDER", config.uploadFolder, false),
-    toFlag("NEXT_PUBLIC_DEFAULT_UPLOAD_TAGS", config.defaultTags, false)
+    toFlag("NEXT_PUBLIC_DEFAULT_UPLOAD_TAGS", config.defaultTags, false),
+    toFlag("ALLOW_PUBLIC_SIGNED_UPLOAD", process.env.ALLOW_PUBLIC_SIGNED_UPLOAD, false)
   ];
 }
 
@@ -58,6 +63,13 @@ export function hasServerUploadSigningConfig(): boolean {
     process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME &&
       process.env.CLOUDINARY_API_KEY &&
       process.env.CLOUDINARY_API_SECRET
+  );
+}
+
+export function isPublicSignedUploadEnabled(): boolean {
+  return isPublicSignedUploadEnabledByPolicy(
+    hasServerUploadSigningConfig(),
+    process.env.ALLOW_PUBLIC_SIGNED_UPLOAD
   );
 }
 

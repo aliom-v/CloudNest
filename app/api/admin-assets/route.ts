@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
 import { authorizeAdminRequest } from "@/lib/auth";
-import { listCloudinaryAssets } from "@/lib/cloudinary";
+import { listCloudinaryAssets, searchCloudinaryAssets } from "@/lib/cloudinary";
 import { getPublicUploadConfig, getServerCloudinaryConfig } from "@/lib/env";
 import type { AdminAssetsResult } from "@/types/api";
 
@@ -43,30 +43,24 @@ export async function GET(request: NextRequest) {
     : DEFAULT_MAX_RESULTS;
 
   try {
-    const result = await listCloudinaryAssets({
-      cloudName,
-      apiKey,
-      apiSecret,
-      prefix: uploadFolder,
-      maxResults,
-      nextCursor
-    });
-
-    const assets = query
-      ? result.assets.filter((asset) => {
-          const haystacks = [
-            asset.fileName,
-            asset.publicId,
-            asset.format,
-            asset.tags?.join(" ")
-          ]
-            .filter(Boolean)
-            .join(" ")
-            .toLowerCase();
-
-          return haystacks.includes(query);
+    const result = query
+      ? await searchCloudinaryAssets({
+          cloudName,
+          apiKey,
+          apiSecret,
+          prefix: uploadFolder,
+          query,
+          maxResults,
+          nextCursor
         })
-      : result.assets;
+      : await listCloudinaryAssets({
+          cloudName,
+          apiKey,
+          apiSecret,
+          prefix: uploadFolder,
+          maxResults,
+          nextCursor
+        });
 
     return NextResponse.json<{
       success: true;
@@ -76,7 +70,7 @@ export async function GET(request: NextRequest) {
       success: true,
       message: "Assets retrieved successfully",
       data: {
-        assets,
+        assets: result.assets,
         nextCursor: result.nextCursor
       }
     });

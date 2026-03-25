@@ -14,11 +14,16 @@ const MAX_FILE_SIZE = 10 * 1024 * 1024;
 type UploadState = "idle" | "uploading" | "success" | "error";
 
 type UploadWorkbenchProps = {
+  hasServerSignedUploadConfig: boolean;
   signedUploadAvailable: boolean;
   allowUnsignedFallback: boolean;
 };
 
-export function UploadWorkbench({ signedUploadAvailable, allowUnsignedFallback }: UploadWorkbenchProps) {
+export function UploadWorkbench({
+  hasServerSignedUploadConfig,
+  signedUploadAvailable,
+  allowUnsignedFallback
+}: UploadWorkbenchProps) {
   const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME || "";
   const uploadPreset = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET || "";
   const uploadFolder = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_FOLDER || "cloudnest/uploads";
@@ -93,7 +98,11 @@ export function UploadWorkbench({ signedUploadAvailable, allowUnsignedFallback }
 
     if (!isConfigured) {
       setUploadState("error");
-      setMessage("缺少 Cloudinary 公共环境变量，请先配置 cloud name 和 upload preset。");
+      setMessage(
+        hasServerSignedUploadConfig && !signedUploadAvailable
+          ? "当前环境已配置服务端签名上传，但未对公开访客开放。请启用 ALLOW_PUBLIC_SIGNED_UPLOAD=true，或配置 unsigned upload preset。"
+          : "缺少 Cloudinary 公共环境变量，请先配置 cloud name 和 upload preset。"
+      );
       return;
     }
 
@@ -179,9 +188,11 @@ export function UploadWorkbench({ signedUploadAvailable, allowUnsignedFallback }
               当前上传策略：
               {signedUploadAvailable
                 ? "优先 signed upload。"
-                : allowUnsignedFallback
-                  ? "使用 unsigned upload preset。"
-                  : "unsigned fallback 已关闭。"}
+                : hasServerSignedUploadConfig
+                  ? "signed upload 已配置，但当前仅对受控访问开放。"
+                  : allowUnsignedFallback
+                    ? "使用 unsigned upload preset。"
+                    : "unsigned fallback 已关闭。"}
               {lastUploadMode ? ` 最近一次成功上传走的是 ${lastUploadMode} 模式。` : ""}
             </p>
 
@@ -201,7 +212,7 @@ export function UploadWorkbench({ signedUploadAvailable, allowUnsignedFallback }
             {!isConfigured ? (
               <p className="help-text">
                 当前页面不会上传，直到你配置 `NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME`，并至少满足以下其中一种条件：
-                启用服务端签名上传，或在允许 unsigned fallback 的前提下配置 `NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET`。
+                显式开启公开 signed upload，或在允许 unsigned fallback 的前提下配置 `NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET`。
               </p>
             ) : null}
           </div>

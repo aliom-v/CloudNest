@@ -1,5 +1,6 @@
 import { createHash } from "node:crypto";
 
+import { buildCloudinarySearchExpression } from "@/lib/cloudinary-search-policy";
 import type { CloudinaryAdminResource, ResourceType, UploadedAsset } from "@/types/asset";
 
 type DeleteAssetInput = {
@@ -35,6 +36,10 @@ type ListAssetsInput = {
 type ListAssetsOutput = {
   assets: UploadedAsset[];
   nextCursor?: string;
+};
+
+type SearchAssetsInput = ListAssetsInput & {
+  query: string;
 };
 
 export function getUnsignedUploadEndpoint(cloudName: string): string {
@@ -106,6 +111,47 @@ export async function listCloudinaryAssets(input: ListAssetsInput): Promise<List
 
   return {
     assets,
+    nextCursor: data.next_cursor
+  };
+}
+
+export async function searchCloudinaryAssets(input: SearchAssetsInput): Promise<ListAssetsOutput> {
+  const params = new URLSearchParams({
+    expression: buildCloudinarySearchExpression({
+      uploadFolder: input.prefix,
+      query: input.query
+    }),
+    max_results: String(input.maxResults),
+    fields: "secure_url,bytes,width,height,format,resource_type,type,tags,created_at"
+  });
+
+  if (input.nextCursor) {
+    params.set("next_cursor", input.nextCursor);
+  }
+
+  const response = await fetch(
+    `https://api.cloudinary.com/v1_1/${input.cloudName}/resources/search?${params.toString()}`,
+    {
+      method: "GET",
+      headers: {
+        Authorization: buildCloudinaryBasicAuthHeader(input.apiKey, input.apiSecret)
+      },
+      cache: "no-store"
+    }
+  );
+
+  const data = (await response.json()) as {
+    resources?: CloudinaryAdminResource[];
+    next_cursor?: string;
+    error?: { message?: string };
+  };
+
+  if (!response.ok) {
+    throw new Error(data.error?.message || "Cloudinary asset search request failed.");
+  }
+
+  return {
+    assets: (data.resources || []).map(toUploadedAssetFromAdminResource),
     nextCursor: data.next_cursor
   };
 }

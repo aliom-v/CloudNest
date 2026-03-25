@@ -1,10 +1,17 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 
+import { authorizeAdminRequest } from "@/lib/auth";
 import { buildSignedUploadParams } from "@/lib/cloudinary";
-import { getPublicUploadConfig, getServerCloudinaryConfig, hasServerUploadSigningConfig } from "@/lib/env";
+import {
+  getPublicUploadConfig,
+  getServerCloudinaryConfig,
+  hasServerUploadSigningConfig,
+  isPublicSignedUploadEnabled
+} from "@/lib/env";
+import { isSameOriginRequest } from "@/lib/upload-policy";
 import type { SignedUploadParamsResult } from "@/types/api";
 
-export async function POST() {
+export async function POST(request: NextRequest) {
   if (!hasServerUploadSigningConfig()) {
     return NextResponse.json(
       {
@@ -13,6 +20,30 @@ export async function POST() {
       },
       { status: 501 }
     );
+  }
+
+  if (isPublicSignedUploadEnabled()) {
+    if (!isSameOriginRequest(request.headers.get("origin"), request.headers.get("host"))) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "公开 signed upload 仅允许从当前站点发起同源请求。"
+        },
+        { status: 403 }
+      );
+    }
+  } else {
+    const authorization = authorizeAdminRequest(request);
+
+    if (!authorization.ok) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "当前环境未开放公开 signed upload，请使用管理员会话访问。"
+        },
+        { status: authorization.status }
+      );
+    }
   }
 
   const { uploadFolder, defaultTags } = getPublicUploadConfig();

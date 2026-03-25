@@ -43,6 +43,7 @@ cp .env.example .env.local
 | `ADMIN_LOGIN_PASSWORD` | 后台登录密码 | 后台必填 |
 | `ADMIN_SESSION_SECRET` | 后台会话签名密钥 | 后台必填 |
 | `ADMIN_SESSION_TTL_HOURS` | 后台会话有效时长，默认 24 小时 | 否 |
+| `ALLOW_PUBLIC_SIGNED_UPLOAD` | 是否对公开访客开放 signed upload，默认 `false` | 否 |
 | `ALLOW_UNSIGNED_UPLOAD_FALLBACK` | 是否允许 signed upload 失败后回退到 unsigned，默认 `true` | 否 |
 | `BLOB_READ_WRITE_TOKEN` | Vercel Blob Token，用于持久化删除审计 | 否 |
 
@@ -50,8 +51,9 @@ cp .env.example .env.local
 
 - 如果你只想先把上传链路跑通，至少需要配置 `NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME`，以及以下两种方案中的一种：
 - 方案 A：配置 `NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET`，走 unsigned 上传。
-- 方案 B：配置 `CLOUDINARY_API_KEY` 和 `CLOUDINARY_API_SECRET`，走 signed 上传。
+- 方案 B：配置 `CLOUDINARY_API_KEY` 和 `CLOUDINARY_API_SECRET`，并显式设置 `ALLOW_PUBLIC_SIGNED_UPLOAD=true`，走公开 signed 上传。
 - 如果你要测试 `/admin` 后台，除了 Cloudinary 服务端密钥，还需要配置 `AUTH_ALLOWED_EMAILS`、`ADMIN_LOGIN_PASSWORD`、`ADMIN_SESSION_SECRET`。
+- 如果 `ALLOW_PUBLIC_SIGNED_UPLOAD=false`，signed upload 参数接口只对管理员会话开放。
 
 ## 本地启动
 
@@ -72,6 +74,8 @@ http://localhost:3000
 npm run dev
 npm run lint
 npm run typecheck
+npm run test
+npm run verify
 npm run build
 npm run start
 ```
@@ -85,10 +89,11 @@ npm run start
 ```bash
 npm run lint
 npm run typecheck
+npm run test
 npm run build
 ```
 
-这三步分别用于检查 ESLint、TypeScript 类型和生产构建是否正常。
+这四步分别用于检查 ESLint、TypeScript 类型、关键边界逻辑测试和生产构建是否正常。
 
 ### 2. 手动测试上传链路
 

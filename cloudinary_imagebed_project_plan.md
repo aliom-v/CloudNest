@@ -222,7 +222,7 @@ Cloudinary
 | `/admin` | 是 | 管理员 | 查看近期资源、删除资源 |
 | `/login` 或认证弹窗 | 是 | 公开 | 管理员登录入口 |
 | `/api/delete-image` | 是 | 管理员 | 服务端删除资源 |
-| `/api/sign-cloudinary-params` | 否，可预留 | 管理员或受控访客 | 后续 signed upload |
+| `/api/sign-cloudinary-params` | 否，可预留 | 管理员或显式开启公开 signed upload 的访客 | 后续 signed upload |
 
 ### 8.2 首页信息架构
 
@@ -448,6 +448,7 @@ Cloudinary
 
 - 后续将 unsigned upload 升级为 signed upload 时使用。
 - 对上传目录、标签、时间戳与允许参数做服务端签名与约束。
+- 若未显式开启公开 signed upload，应仅允许管理员或受控调用方访问。
 
 ### 13.5 前端统一响应处理
 

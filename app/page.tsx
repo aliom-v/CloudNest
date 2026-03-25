@@ -1,14 +1,21 @@
 import { UploadWorkbench } from "@/components/upload/upload-workbench";
-import { allowUnsignedUploadFallback, getPublicEnvFlags, hasServerUploadSigningConfig } from "@/lib/env";
+import {
+  allowUnsignedUploadFallback,
+  getPublicEnvFlags,
+  hasServerUploadSigningConfig,
+  isPublicSignedUploadEnabled
+} from "@/lib/env";
 
 export default function HomePage() {
   const envFlags = getPublicEnvFlags();
-  const signedUploadAvailable = hasServerUploadSigningConfig();
+  const serverSignedConfigured = hasServerUploadSigningConfig();
+  const signedUploadAvailable = isPublicSignedUploadEnabled();
   const unsignedFallbackEnabled = allowUnsignedUploadFallback();
 
   return (
     <div className="stack-xl">
       <UploadWorkbench
+        hasServerSignedUploadConfig={serverSignedConfigured}
         signedUploadAvailable={signedUploadAvailable}
         allowUnsignedFallback={unsignedFallbackEnabled}
       />
@@ -44,10 +51,20 @@ export default function HomePage() {
           ))}
 
           <li className="env-item">
-            <span className={`status-dot ${signedUploadAvailable ? "status-live" : "status-muted"}`} />
+            <span
+              className={`status-dot ${
+                serverSignedConfigured ? "status-live" : "status-muted"
+              }`}
+            />
             <div>
               <strong>Server Signed Upload</strong>
-              <p>{signedUploadAvailable ? "已启用，可优先走 signed upload" : "未启用，前端将使用 unsigned upload"}</p>
+              <p>
+                {signedUploadAvailable
+                  ? "已启用，公开访客可优先走 signed upload"
+                  : serverSignedConfigured
+                    ? "服务端已配置，但当前未对公开访客开放"
+                    : "未启用，前端将使用 unsigned upload"}
+              </p>
             </div>
           </li>
 
