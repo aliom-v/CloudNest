@@ -20,3 +20,4 @@ pnpm-debug.log*
 .env.production.local
 .env*.local
 !.env.example
+.vercel
