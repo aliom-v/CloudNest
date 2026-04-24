@@ -7,6 +7,7 @@ import {
   isAdminEmail
 } from "@/lib/auth";
 import { getAdminAuthConfig, hasAdminAuthConfig } from "@/lib/env";
+import { checkRateLimit } from "@/lib/rate-limit";
 import type { AdminSessionResult } from "@/types/api";
 
 export async function GET() {
@@ -37,6 +38,26 @@ export async function GET() {
 }
 
 export async function POST(request: NextRequest) {
+  const clientIp =
+    request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+    request.headers.get("x-real-ip") ||
+    "unknown";
+
+  const { allowed, retryAfter } = checkRateLimit(clientIp);
+
+  if (!allowed) {
+    return NextResponse.json(
+      {
+        success: false,
+        message: `登录尝试过于频繁，请 ${retryAfter} 秒后再试。`
+      },
+      {
+        status: 429,
+        headers: { "Retry-After": String(retryAfter) }
+      }
+    );
+  }
+
   if (!hasAdminAuthConfig()) {
     return NextResponse.json(
       {
@@ -119,8 +140,8 @@ export async function POST(request: NextRequest) {
     name: ADMIN_SESSION_COOKIE,
     value: session.token,
     httpOnly: true,
-    sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
+    sameSite: "strict",
+    secure: true,
     path: "/",
     expires: new Date(session.expiresAt)
   });
@@ -138,8 +159,8 @@ export async function DELETE() {
     name: ADMIN_SESSION_COOKIE,
     value: "",
     httpOnly: true,
-    sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
+    sameSite: "strict",
+    secure: true,
     path: "/",
     expires: new Date(0)
   });

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import pLimit from "p-limit";
 
 import { authorizeAdminRequest } from "@/lib/auth";
 import { deleteManagedAsset } from "@/lib/delete-service";
@@ -41,27 +42,31 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  const limit = pLimit(5);
+
   const results = await Promise.all(
-    payload.items.map(async (item) => {
-      const result = await deleteManagedAsset({
-        actorEmail: authorization.email,
-        payload: item
-      });
+    payload.items.map((item) =>
+      limit(async () => {
+        const result = await deleteManagedAsset({
+          actorEmail: authorization.email,
+          payload: item
+        });
 
-      if (result.success) {
+        if (result.success) {
+          return {
+            success: true as const,
+            data: result.data
+          };
+        }
+
         return {
-          success: true as const,
-          data: result.data
+          success: false as const,
+          status: result.status,
+          message: result.message,
+          publicId: item.publicId
         };
-      }
-
-      return {
-        success: false as const,
-        status: result.status,
-        message: result.message,
-        publicId: item.publicId
-      };
-    })
+      })
+    )
   );
 
   const succeeded = results.filter((result) => result.success).length;

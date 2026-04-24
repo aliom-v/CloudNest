@@ -1,0 +1,12 @@
+node_modules/
+.next/
+.data/
+out/
+build/
+.git/
+.gitignore
+.env*
+!.env.example
+*.md
+Dockerfile
+.dockerignore

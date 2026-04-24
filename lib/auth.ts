@@ -21,7 +21,7 @@ type AdminSessionPayload = {
   exp: number;
 };
 
-export const ADMIN_SESSION_COOKIE = "cloudnest_admin_session";
+export const ADMIN_SESSION_COOKIE = "__Host-cloudnest_admin_session";
 
 export function getAllowedAdminEmails(): string[] {
   const raw = process.env.AUTH_ALLOWED_EMAILS || "";
@@ -98,7 +98,7 @@ export async function getCurrentAdminSessionEmail(): Promise<string | null> {
   return session?.email || null;
 }
 
-function verifyAdminSessionToken(token: string): AdminSessionPayload | null {
+export function verifyAdminSessionToken(token: string): AdminSessionPayload | null {
   const { sessionSecret } = getAdminAuthConfig();
   if (!sessionSecret) {
     return null;
